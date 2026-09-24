@@ -17,6 +17,17 @@ type ConversationNode = {
   contents: NodeContents
 }
 
+type TextSelection = {
+  nodeId: number
+  text: string
+  position: {
+    top: number
+    left: number
+    width: number
+    height: number
+  }
+}
+
 function App() {
   const [inputText, setInputText] = useState('')
 
@@ -44,6 +55,46 @@ function App() {
   ])
 
   const [isThinking, setIsThinking] = useState(false)
+
+  const [selectedText, setSelectedText] =
+    useState<TextSelection | null>(null)
+
+  const [isAskingAboutSelection, setIsAskingAboutSelection] =
+    useState(false)
+
+  const [contextQuestion, setContextQuestion] = useState('')
+
+  function handleTextSelection(nodeId: number) {
+    const selection = window.getSelection()
+
+    if (!selection || selection.rangeCount === 0) {
+      return
+    }
+
+    const text = selection.toString().trim()
+
+    if (text === '') {
+      return
+    }
+
+    const range = selection.getRangeAt(0)
+    const rect = range.getBoundingClientRect()
+
+    const newSelection: TextSelection = {
+      nodeId,
+      text,
+      position: {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      },
+    }
+
+    setSelectedText(newSelection)
+
+    console.log('Selected text:', newSelection)
+  }
 
   async function handleSend() {
     if (inputText.trim() === '') {
@@ -106,6 +157,26 @@ function App() {
     setIsThinking(false)
   }
 
+  function handleAskAboutSelection() {
+    if (!selectedText) {
+      return
+    }
+
+    setIsAskingAboutSelection(true)
+  }
+
+  function handleContextQuestionSubmit() {
+    if (!selectedText || contextQuestion.trim() === '') {
+      return
+    }
+
+    console.log('Context question:', {
+      parentId: selectedText.nodeId,
+      highlightedContext: selectedText.text,
+      question: contextQuestion,
+    })
+  }
+
   return (
     <div className="app">
       <header className="chat-header">
@@ -127,7 +198,17 @@ function App() {
                 {message.role === 'user' ? 'You' : 'AI'}
               </div>
 
-              <p>{message.content}</p>
+              <p
+                onMouseUp={() => {
+                  if (message.role === 'ai') {
+                    handleTextSelection(
+                      conversationNodes[0].id,
+                    )
+                  }
+                }}
+              >
+                {message.content}
+              </p>
             </div>
           ),
         )}
@@ -140,12 +221,61 @@ function App() {
         )}
       </main>
 
+      {selectedText && !isAskingAboutSelection && (
+        <button
+          className="ask-about-button"
+          style={{
+            position: 'fixed',
+            top:
+              selectedText.position.top +
+              selectedText.position.height +
+              8,
+            left: selectedText.position.left,
+          }}
+          onClick={handleAskAboutSelection}
+        >
+          Ask about this
+        </button>
+      )}
+
+      {isAskingAboutSelection && selectedText && (
+        <div className="context-question-box">
+          <div className="context-question-label">
+            Ask about:
+          </div>
+
+          <div className="context-question-text">
+            "{selectedText.text}"
+          </div>
+
+          <input
+            type="text"
+            placeholder="Ask a question..."
+            value={contextQuestion}
+            onChange={(event) =>
+              setContextQuestion(event.target.value)
+            }
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                handleContextQuestionSubmit()
+              }
+            }}
+          />
+
+          <button onClick={handleContextQuestionSubmit}>
+            Ask
+          </button>
+        </div>
+      )}
+
       <div className="input-area">
         <input
           type="text"
           placeholder="What's in your mind?"
           value={inputText}
-          onChange={(event) => setInputText(event.target.value)}
+          onChange={(event) =>
+            setInputText(event.target.value)
+          }
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               handleSend()

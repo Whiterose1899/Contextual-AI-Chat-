@@ -85,3 +85,49 @@
 .input-area button:hover {
   background: #444;
 }
+
+.ask-about-button:hover {
+  background: #444;
+}
+
+.context-question-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+}
+
+.context-question-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.context-question-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.context-question-box input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.context-question-box button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+}
