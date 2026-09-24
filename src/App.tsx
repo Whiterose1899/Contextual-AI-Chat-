@@ -1,29 +1,46 @@
 import { useState } from 'react'
 import './App.css'
 
-type Message = {
-  id: number
+type ConversationMessage = {
   role: 'user' | 'ai'
   content: string
-  parentId?: number
+}
+
+type NodeContents = {
+  highlightedContext: string | null
+  branchConversation: ConversationMessage[]
+}
+
+type ConversationNode = {
+  id: number
+  parentId: number
+  contents: NodeContents
 }
 
 function App() {
   const [inputText, setInputText] = useState('')
 
-  const [messages, setMessages] = useState<Message[]>([
-      {
-        id: 1,
-        role: 'user',
-        content: 'Explain climate change.',
+  const [conversationNodes, setConversationNodes] = useState<
+    ConversationNode[]
+  >([
+    {
+      id: 1,
+      parentId: -1,
+      contents: {
+        highlightedContext: null,
+        branchConversation: [
+          {
+            role: 'user',
+            content: 'Explain climate change.',
+          },
+          {
+            role: 'ai',
+            content:
+              "Climate change refers to long-term changes in the Earth's temperature and weather patterns. These changes can occur naturally, but human activities have been the main driver of climate change since the 1800s.",
+          },
+        ],
       },
-      {
-        id: 2,
-        role: 'ai',
-        content:
-          "Climate change refers to long-term changes in the Earth's temperature and weather patterns. These changes can occur naturally, but human activities have been the main driver of climate change since the 1800s.",
-        parentId: 1,
-      },
+    },
   ])
 
   const [isThinking, setIsThinking] = useState(false)
@@ -33,33 +50,58 @@ function App() {
       return
     }
 
-    const userMessage: Message = {
-      id: Date.now(),
+    const userMessage: ConversationMessage = {
       role: 'user',
       content: inputText,
     }
 
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      userMessage,
-    ])
+    setConversationNodes((previousNodes) =>
+      previousNodes.map((node, index) => {
+        if (index !== 0) {
+          return node
+        }
+
+        return {
+          ...node,
+          contents: {
+            ...node.contents,
+            branchConversation: [
+              ...node.contents.branchConversation,
+              userMessage,
+            ],
+          },
+        }
+      }),
+    )
 
     setInputText('')
     setIsThinking(true)
 
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const aiMessage: Message = {
-      id: Date.now() + 1,
+    const aiMessage: ConversationMessage = {
       role: 'ai',
       content: 'This is a mock AI response.',
-      parentId: userMessage.id,
     }
 
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      aiMessage,
-    ])
+    setConversationNodes((previousNodes) =>
+      previousNodes.map((node, index) => {
+        if (index !== 0) {
+          return node
+        }
+
+        return {
+          ...node,
+          contents: {
+            ...node.contents,
+            branchConversation: [
+              ...node.contents.branchConversation,
+              aiMessage,
+            ],
+          },
+        }
+      }),
+    )
 
     setIsThinking(false)
   }
@@ -71,22 +113,24 @@ function App() {
       </header>
 
       <main className="chat">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`message ${
-              message.role === 'user'
-                ? 'user-message'
-                : 'ai-message'
-            }`}
-          >
-            <div className="message-label">
-              {message.role === 'user' ? 'You' : 'AI'}
-            </div>
+        {conversationNodes[0].contents.branchConversation.map(
+          (message, index) => (
+            <div
+              key={index}
+              className={`message ${
+                message.role === 'user'
+                  ? 'user-message'
+                  : 'ai-message'
+              }`}
+            >
+              <div className="message-label">
+                {message.role === 'user' ? 'You' : 'AI'}
+              </div>
 
-            <p>{message.content}</p>
-          </div>
-        ))}
+              <p>{message.content}</p>
+            </div>
+          ),
+        )}
 
         {isThinking && (
           <div className="message ai-message">
@@ -109,9 +153,7 @@ function App() {
           }}
         />
 
-        <button onClick={handleSend}>
-          Send
-        </button>
+        <button onClick={handleSend}>Send</button>
       </div>
     </div>
   )
