@@ -131,3 +131,32 @@
   background: #222;
   color: white;
 }
+
+.conversation-node {
+  margin-bottom: 30px;
+}
+
+.child-nodes {
+  margin-left: 50px;
+  padding-left: 25px;
+  border-left: 2px solid #ddd;
+}
+
+.highlighted-context {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  border-left: 3px solid #555;
+}
+
+.context-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.context-text {
+  font-size: 14px;
+  color: #555;
+}

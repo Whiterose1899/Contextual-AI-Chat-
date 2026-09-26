@@ -103,12 +103,12 @@ function App() {
 
     const userMessage: ConversationMessage = {
       role: 'user',
-      content: inputText,
+      content: inputText.trim(),
     }
 
     setConversationNodes((previousNodes) =>
-      previousNodes.map((node, index) => {
-        if (index !== 0) {
+      previousNodes.map((node) => {
+        if (node.id !== 1) {
           return node
         }
 
@@ -136,8 +136,8 @@ function App() {
     }
 
     setConversationNodes((previousNodes) =>
-      previousNodes.map((node, index) => {
-        if (index !== 0) {
+      previousNodes.map((node) => {
+        if (node.id !== 1) {
           return node
         }
 
@@ -170,24 +170,59 @@ function App() {
       return
     }
 
-    console.log('Context question:', {
+    const newNode: ConversationNode = {
+      id: Date.now(),
       parentId: selectedText.nodeId,
-      highlightedContext: selectedText.text,
-      question: contextQuestion,
-    })
+      contents: {
+        highlightedContext: selectedText.text,
+        branchConversation: [
+          {
+            role: 'user',
+            content: contextQuestion.trim(),
+          },
+          {
+            role: 'ai',
+            content: 'This is a mock contextual response.',
+          },
+        ],
+      },
+    }
+
+    setConversationNodes((previousNodes) => [
+      ...previousNodes,
+      newNode,
+    ])
+
+    console.log('New conversation node:', newNode)
+
+    setContextQuestion('')
+    setIsAskingAboutSelection(false)
+    setSelectedText(null)
   }
 
-  return (
-    <div className="app">
-      <header className="chat-header">
-        <h1>Contextual AI</h1>
-      </header>
+  function renderNode(node: ConversationNode) {
+    const childNodes = conversationNodes.filter(
+      (childNode) => childNode.parentId === node.id,
+    )
 
-      <main className="chat">
-        {conversationNodes[0].contents.branchConversation.map(
+    return (
+      <div className="conversation-node" key={node.id}>
+        {node.contents.highlightedContext && (
+          <div className="highlighted-context">
+            <div className="context-label">
+              Context
+            </div>
+
+            <div className="context-text">
+              "{node.contents.highlightedContext}"
+            </div>
+          </div>
+        )}
+
+        {node.contents.branchConversation.map(
           (message, index) => (
             <div
-              key={index}
+              key={`${node.id}-${index}`}
               className={`message ${
                 message.role === 'user'
                   ? 'user-message'
@@ -201,9 +236,7 @@ function App() {
               <p
                 onMouseUp={() => {
                   if (message.role === 'ai') {
-                    handleTextSelection(
-                      conversationNodes[0].id,
-                    )
+                    handleTextSelection(node.id)
                   }
                 }}
               >
@@ -212,6 +245,30 @@ function App() {
             </div>
           ),
         )}
+
+        {childNodes.length > 0 && (
+          <div className="child-nodes">
+            {childNodes.map((childNode) =>
+              renderNode(childNode),
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const rootNode = conversationNodes.find(
+    (node) => node.parentId === -1,
+  )
+
+  return (
+    <div className="app">
+      <header className="chat-header">
+        <h1>Contextual AI</h1>
+      </header>
+
+      <main className="chat">
+        {rootNode && renderNode(rootNode)}
 
         {isThinking && (
           <div className="message ai-message">
