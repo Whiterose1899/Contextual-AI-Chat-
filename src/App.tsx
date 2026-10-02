@@ -165,39 +165,64 @@ function App() {
     setIsAskingAboutSelection(true)
   }
 
-  function handleContextQuestionSubmit() {
+  async function handleContextQuestionSubmit() {
     if (!selectedText || contextQuestion.trim() === '') {
       return
     }
 
-    const newNode: ConversationNode = {
-      id: Date.now(),
-      parentId: selectedText.nodeId,
-      contents: {
-        highlightedContext: selectedText.text,
-        branchConversation: [
-          {
-            role: 'user',
-            content: contextQuestion.trim(),
-          },
-          {
-            role: 'ai',
-            content: 'This is a mock contextual response.',
-          },
-        ],
-      },
+    const question = contextQuestion.trim()
+    const context = selectedText.text
+    const parentNodeId = selectedText.nodeId
+
+    try {
+      const response = await fetch('http://localhost:3001/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          highlightedContext: context,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from backend')
+      }
+
+      const data = await response.json()
+
+      const newNode: ConversationNode = {
+        id: Date.now(),
+        parentId: parentNodeId,
+        contents: {
+          highlightedContext: context,
+          branchConversation: [
+            {
+              role: 'user',
+              content: question,
+            },
+            {
+              role: 'ai',
+              content: data.answer,
+            },
+          ],
+        },
+      }
+
+      setConversationNodes((previousNodes) => [
+        ...previousNodes,
+        newNode,
+      ])
+
+      console.log('New conversation node:', newNode)
+
+      setContextQuestion('')
+      setIsAskingAboutSelection(false)
+      setSelectedText(null)
+    } catch (error) {
+      console.error('Error asking contextual question:', error)
     }
-
-    setConversationNodes((previousNodes) => [
-      ...previousNodes,
-      newNode,
-    ])
-
-    console.log('New conversation node:', newNode)
-
-    setContextQuestion('')
-    setIsAskingAboutSelection(false)
-    setSelectedText(null)
   }
 
   function renderNode(node: ConversationNode) {
