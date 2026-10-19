@@ -64,6 +64,8 @@ function App() {
 
   const [contextQuestion, setContextQuestion] = useState('')
 
+  const [isContextThinking, setIsContextThinking] = useState(false)
+
   function handleTextSelection(nodeId: number) {
     const selection = window.getSelection()
 
@@ -174,6 +176,8 @@ function App() {
     const context = selectedText.text
     const parentNodeId = selectedText.nodeId
 
+    setIsContextThinking(true)
+
     try {
       const response = await fetch('http://localhost:3001/api/ask', {
         method: 'POST',
@@ -220,6 +224,7 @@ function App() {
       setContextQuestion('')
       setIsAskingAboutSelection(false)
       setSelectedText(null)
+      setIsContextThinking(false)
     } catch (error) {
       console.error('Error asking contextual question:', error)
     }
@@ -330,23 +335,30 @@ function App() {
             "{selectedText.text}"
           </div>
 
-          <input
-            type="text"
-            placeholder="Ask a question..."
-            value={contextQuestion}
-            onChange={(event) =>
-              setContextQuestion(event.target.value)
+        <input
+          type="text"
+          placeholder="Ask a question..."
+          value={contextQuestion}
+          disabled={isContextThinking}
+          onChange={(event) =>
+            setContextQuestion(event.target.value)
+          }
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleContextQuestionSubmit()
             }
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                handleContextQuestionSubmit()
-              }
-            }}
-          />
-
+          }}
+        />
+        
+          {isContextThinking ? (
+            <div className="context-thinking">
+              Thinking...
+            </div>
+          ) : (
           <button onClick={handleContextQuestionSubmit}>
-            Ask
-          </button>
+              Ask
+            </button>
+          )}
         </div>
       )}
 
